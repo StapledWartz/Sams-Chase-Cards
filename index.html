@@ -11,7 +11,6 @@
         .tail-container { font-family: 'Inter', system_ui, sans-serif; }
         .logo-font { font-family: 'Space Grotesk', sans-serif; }
         .card-img { transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); }
-        .card:hover .card-img { transform: scale(1.08) rotate(2deg); }
     </style>
 </head>
 <body class="tail-container bg-zinc-950 text-zinc-200 min-h-screen">
@@ -27,24 +26,23 @@
                         <p class="text-xs text-pink-400 -mt-1">TRADING CARD TRACKER</p>
                     </div>
                 </div>
-                <div class="flex items-center gap-x-8">
-                    <div id="stats" class="text-sm text-zinc-400"></div>
-                    <div id="total-count" class="bg-zinc-900 px-6 py-3 rounded-3xl text-sm border border-zinc-700 font-medium"></div>
-                </div>
+                <div id="stats" class="text-sm text-pink-400 font-medium"></div>
             </div>
         </header>
 
-        <div class="p-6">
-            <div class="flex flex-wrap gap-4 mb-8">
-                <input id="search-input" onkeyup="filterCards()" placeholder="Search..." 
-                       class="flex-1 bg-zinc-900 border border-zinc-700 focus:border-pink-500 rounded-3xl px-6 py-5 outline-none">
-                <select id="set-filter" onchange="filterCards()" class="bg-zinc-900 border border-zinc-700 rounded-3xl px-6 py-5 outline-none"></select>
-                <select id="owned-filter" onchange="filterCards()" class="bg-zinc-900 border border-zinc-700 rounded-3xl px-6 py-5 outline-none">
-                    <option value="">All Cards</option>
-                    <option value="owned">Owned</option>
-                    <option value="wanted">Wanted</option>
-                </select>
+        <!-- Tabs -->
+        <div class="px-6 pt-4 border-b border-zinc-800">
+            <div class="flex border-b border-zinc-700">
+                <button onclick="switchTab(0)" id="tab-all" 
+                        class="tab-button px-8 py-4 font-medium border-b-2 border-pink-500 text-pink-400">All Cards</button>
+                <button onclick="switchTab(1)" id="tab-owned" 
+                        class="tab-button px-8 py-4 font-medium text-zinc-400">Owned Cards</button>
             </div>
+        </div>
+
+        <div class="p-6">
+            <input id="search-input" onkeyup="filterCards()" placeholder="Search..." 
+                   class="w-full bg-zinc-900 border border-zinc-700 focus:border-pink-500 rounded-3xl px-6 py-5 outline-none mb-8">
 
             <div id="grid-view" class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 gap-6"></div>
         </div>
@@ -54,6 +52,7 @@
         const CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vQ0vHCargExvsNDK7UUL6DccDHoJ8SMfDTh5QEDK47y3XBu3uNsReX93vmQfLApocJtwPZ7EQQZywbf/pub?output=csv";
         let allCards = [];
         let ownedCards = JSON.parse(localStorage.getItem('ownedCards')) || {};
+        let currentTab = 0; // 0 = all, 1 = owned
 
         async function loadCards() {
             const res = await fetch(CSV_URL);
@@ -70,43 +69,51 @@
                 year: r[6] || ''
             })).filter(c => c.name);
 
-            document.getElementById('total-count').innerHTML = `<span class="font-mono text-pink-400">${allCards.length}</span> cards`;
-            populateFilters();
-            renderCards(allCards);
             updateStats();
-        }
-
-        function populateFilters() {
-            const sets = [...new Set(allCards.map(c => c.setName).filter(Boolean))].sort();
-            const setSelect = document.getElementById('set-filter');
-            sets.forEach(s => {
-                const opt = document.createElement('option');
-                opt.value = s; opt.textContent = s;
-                setSelect.appendChild(opt);
-            });
-        }
-
-        function toggleOwned(id) {
-            if (ownedCards[id]) {
-                delete ownedCards[id];
-            } else {
-                ownedCards[id] = true;
-            }
-            localStorage.setItem('ownedCards', JSON.stringify(ownedCards));
-            updateStats();
-            filterCards();
+            renderCards();
         }
 
         function updateStats() {
             const count = Object.keys(ownedCards).length;
-            document.getElementById('stats').innerHTML = `Owned: <span class="text-pink-400 font-medium">${count}</span> / ${allCards.length}`;
+            document.getElementById('stats').innerHTML = `Owned: <span class="text-pink-400">${count}</span> / ${allCards.length}`;
         }
 
-        function renderCards(cards) {
+        function toggleOwned(id) {
+            if (ownedCards[id]) delete ownedCards[id];
+            else ownedCards[id] = true;
+            localStorage.setItem('ownedCards', JSON.stringify(ownedCards));
+            updateStats();
+            renderCards();
+        }
+
+        function switchTab(tab) {
+            currentTab = tab;
+            document.getElementById('tab-all').classList.toggle('border-pink-500', tab === 0);
+            document.getElementById('tab-all').classList.toggle('text-pink-400', tab === 0);
+            document.getElementById('tab-owned').classList.toggle('border-pink-500', tab === 1);
+            document.getElementById('tab-owned').classList.toggle('text-pink-400', tab === 1);
+            renderCards();
+        }
+
+        function renderCards() {
             const container = document.getElementById('grid-view');
             container.innerHTML = '';
 
-            cards.forEach(card => {
+            let toRender = allCards;
+
+            if (currentTab === 1) {
+                toRender = allCards.filter(c => ownedCards[c.id]);
+            }
+
+            const searchTerm = document.getElementById('search-input').value.toLowerCase();
+            if (searchTerm) {
+                toRender = toRender.filter(c => 
+                    c.name.toLowerCase().includes(searchTerm) || 
+                    c.number.toLowerCase().includes(searchTerm)
+                );
+            }
+
+            toRender.forEach(card => {
                 const isOwned = !!ownedCards[card.id];
                 const div = document.createElement('div');
                 div.className = `group bg-zinc-900 border ${isOwned ? 'border-pink-600' : 'border-zinc-700'} rounded-3xl overflow-hidden hover:border-pink-500 transition-all`;
@@ -115,9 +122,8 @@
                         <img src="${card.image}" onerror="this.src='https://picsum.photos/id/237/400/300'" 
                              class="card-img w-full h-full object-contain" alt="${card.name}">
                         <button onclick="event.stopImmediatePropagation(); toggleOwned(${card.id});" 
-                                class="absolute top-4 right-4 px-4 py-2 bg-black/80 hover:bg-pink-600 rounded-2xl text-sm font-medium transition-colors flex items-center gap-2">
-                            <i class="fa-solid ${isOwned ? 'fa-check' : 'fa-plus'}"></i>
-                            ${isOwned ? 'Owned' : 'Got it'}
+                                class="absolute top-4 right-4 px-5 py-2 ${isOwned ? 'bg-pink-600' : 'bg-black/80 hover:bg-pink-600'} rounded-2xl text-sm font-medium transition-colors">
+                            ${isOwned ? '✓ Owned' : 'Got it'}
                         </button>
                     </div>
                     <div class="p-5">
@@ -130,17 +136,7 @@
         }
 
         function filterCards() {
-            const term = document.getElementById('search-input').value.toLowerCase();
-            const setF = document.getElementById('set-filter').value;
-            const ownedF = document.getElementById('owned-filter').value;
-
-            const filtered = allCards.filter(c => {
-                const searchMatch = c.name.toLowerCase().includes(term) || c.number.toLowerCase().includes(term);
-                const setMatch = !setF || c.setName === setF;
-                const ownedMatch = ownedF === '' || (ownedF === 'owned' && ownedCards[c.id]) || (ownedF === 'wanted' && !ownedCards[c.id]);
-                return searchMatch && setMatch && ownedMatch;
-            });
-            renderCards(filtered);
+            renderCards();
         }
 
         window.onload = loadCards;
