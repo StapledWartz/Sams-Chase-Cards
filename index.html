@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sam's Chase Cards • Tracker</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Space+Grotesk:wght@500;600&display=swap');
+        .tail-container { font-family: 'Inter', system_ui, sans-serif; }
+        .logo-font { font-family: 'Space Grotesk', sans-serif; }
+        .card-img { transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); }
+        .card:hover .card-img { transform: scale(1.06) rotate(1deg); }
+    </style>
+</head>
+<body class="tail-container bg-zinc-950 text-zinc-200 min-h-screen">
+    <div class="max-w-screen-2xl mx-auto">
+        <header class="border-b border-zinc-800 bg-zinc-950 sticky top-0 z-50">
+            <div class="px-6 py-5 flex items-center justify-between">
+                <div class="flex items-center gap-x-4">
+                    <div class="w-14 h-14 bg-black rounded-3xl p-1 shadow-lg">
+                        <img src="logo.png" class="w-full h-full object-contain" alt="Sam's Chase Cards">
+                    </div>
+                    <div>
+                        <h1 class="logo-font text-3xl font-semibold tracking-tighter text-white">SAM'S CHASE CARDS</h1>
+                        <p class="text-xs text-pink-400 -mt-1">TRADING CARD TRACKER</p>
+                    </div>
+                </div>
+                <div id="total-count" class="bg-zinc-900 px-6 py-3 rounded-3xl text-sm border border-zinc-700 font-medium">
+                    <span class="font-mono text-pink-400">0</span> cards
+                </div>
+            </div>
+        </header>
+
+        <div class="p-6">
+            <input id="search-input" 
+                   onkeyup="filterCards()" 
+                   type="text" 
+                   placeholder="Search by name or number..." 
+                   class="w-full bg-zinc-900 border border-zinc-700 focus:border-pink-500 rounded-3xl px-6 py-5 text-base outline-none mb-8">
+
+            <div id="grid-view" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-6">
+                <!-- Cards populated here -->
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vQ0vHCargExvsNDK7UUL6DccDHoJ8SMfDTh5QEDK47y3XBu3uNsReX93vmQfLApocJtwPZ7EQQZywbf/pub?output=csv";
+        let allCards = [];
+
+        async function loadCards() {
+            try {
+                const res = await fetch(CSV_URL);
+                const text = await res.text();
+                const rows = text.trim().split('\n').map(line => 
+                    line.split(',').map(cell => cell.replace(/^"|"$/g, '').trim())
+                );
+
+                allCards = rows.slice(1).map(r => ({
+                    image: r[0] || '',
+                    name: r[1] || '',
+                    number: r[2] || '',
+                    setIcon: r[3] || '',
+                    setAbbr: r[4] || '',
+                    setName: r[5] || '',
+                    year: r[6] || ''
+                })).filter(c => c.name);
+
+                document.getElementById('total-count').innerHTML = 
+                    `<span class="font-mono text-pink-400">${allCards.length}</span> cards`;
+
+                renderCards(allCards);
+            } catch(e) {
+                console.error(e);
+                document.getElementById('grid-view').innerHTML = `<div class="col-span-full text-center py-20 text-red-400">Could not load cards. Check CSV link.</div>`;
+            }
+        }
+
+        function renderCards(cards) {
+            const container = document.getElementById('grid-view');
+            container.innerHTML = '';
+
+            cards.forEach(card => {
+                const div = document.createElement('div');
+                div.className = "group bg-zinc-900 border border-zinc-700 hover:border-pink-500 rounded-3xl overflow-hidden cursor-pointer transition-all";
+                div.innerHTML = `
+                    <div class="relative aspect-[4/3] bg-zinc-950 flex items-center justify-center p-4">
+                        ${card.image ? 
+                            `<img src="${card.image}" class="card-img w-full h-full object-contain" alt="${card.name}">` : 
+                            `<span class="text-7xl opacity-20">🃏</span>`
+                        }
+                    </div>
+                    <div class="p-5">
+                        <div class="font-semibold line-clamp-2 text-base">${card.name}</div>
+                        <div class="flex justify-between text-xs mt-3 text-zinc-400">
+                            <span class="font-mono">${card.number}</span>
+                            <span>${card.setAbbr || card.year}</span>
+                        </div>
+                    </div>
+                `;
+                container.appendChild(div);
+            });
+        }
+
+        function filterCards() {
+            const term = document.getElementById('search-input').value.toLowerCase();
+            const filtered = allCards.filter(c => 
+                c.name.toLowerCase().includes(term) || 
+                (c.number && c.number.toLowerCase().includes(term))
+            );
+            renderCards(filtered);
+        }
+
+        window.onload = loadCards;
+    </script>
+</body>
+</html>
