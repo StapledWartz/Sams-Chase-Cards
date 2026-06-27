@@ -30,13 +30,10 @@
             </div>
         </header>
 
-        <!-- Tabs -->
         <div class="px-6 pt-4 border-b border-zinc-800">
-            <div class="flex border-b border-zinc-700">
-                <button onclick="switchTab(0)" id="tab-all" 
-                        class="tab-button px-8 py-4 font-medium border-b-2 border-pink-500 text-pink-400">All Cards</button>
-                <button onclick="switchTab(1)" id="tab-owned" 
-                        class="tab-button px-8 py-4 font-medium text-zinc-400">Owned Cards</button>
+            <div class="flex">
+                <button onclick="switchTab(0)" id="tab-all" class="tab-button px-8 py-4 font-medium border-b-2 border-pink-500 text-pink-400">All Cards</button>
+                <button onclick="switchTab(1)" id="tab-owned" class="tab-button px-8 py-4 font-medium text-zinc-400">Owned Cards</button>
             </div>
         </div>
 
@@ -48,11 +45,29 @@
         </div>
     </div>
 
+    <!-- Modal -->
+    <div id="modal" class="hidden fixed inset-0 bg-black/90 z-[100] flex items-center justify-center p-6">
+        <div class="bg-zinc-900 rounded-3xl max-w-lg w-full overflow-hidden">
+            <div class="p-4 flex justify-end">
+                <button onclick="closeModal()" class="text-3xl leading-none hover:text-pink-400">×</button>
+            </div>
+            <div id="modal-image" class="px-8 pb-8"></div>
+            <div class="p-6 border-t border-zinc-800">
+                <div id="modal-name" class="text-2xl font-semibold mb-2"></div>
+                <div id="modal-info" class="text-zinc-400"></div>
+                <button id="modal-toggle-btn" 
+                        onclick="toggleFromModal()"
+                        class="mt-6 w-full py-4 rounded-2xl text-lg font-medium"></button>
+            </div>
+        </div>
+    </div>
+
     <script>
         const CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vQ0vHCargExvsNDK7UUL6DccDHoJ8SMfDTh5QEDK47y3XBu3uNsReX93vmQfLApocJtwPZ7EQQZywbf/pub?output=csv";
         let allCards = [];
         let ownedCards = JSON.parse(localStorage.getItem('ownedCards')) || {};
-        let currentTab = 0; // 0 = all, 1 = owned
+        let currentCardId = null;
+        let currentTab = 0;
 
         async function loadCards() {
             const res = await fetch(CSV_URL);
@@ -86,6 +101,38 @@
             renderCards();
         }
 
+        function showModal(card) {
+            currentCardId = card.id;
+            const isOwned = !!ownedCards[card.id];
+
+            document.getElementById('modal-image').innerHTML = `
+                <img src="${card.image}" class="w-full rounded-2xl" alt="${card.name}">
+            `;
+            document.getElementById('modal-name').textContent = card.name;
+            document.getElementById('modal-info').innerHTML = `
+                #${card.number} • ${card.setName} (${card.year})
+            `;
+
+            const btn = document.getElementById('modal-toggle-btn');
+            btn.textContent = isOwned ? "✓ Mark as Wanted" : "Got It!";
+            btn.className = `mt-6 w-full py-4 rounded-2xl text-lg font-medium ${isOwned ? 'bg-red-600 hover:bg-red-700' : 'bg-pink-600 hover:bg-pink-500'}`;
+
+            document.getElementById('modal').classList.remove('hidden');
+            document.getElementById('modal').classList.add('flex');
+        }
+
+        function toggleFromModal() {
+            if (currentCardId !== null) {
+                toggleOwned(currentCardId);
+                showModal(allCards.find(c => c.id === currentCardId));
+            }
+        }
+
+        function closeModal() {
+            document.getElementById('modal').classList.add('hidden');
+            document.getElementById('modal').classList.remove('flex');
+        }
+
         function switchTab(tab) {
             currentTab = tab;
             document.getElementById('tab-all').classList.toggle('border-pink-500', tab === 0);
@@ -99,11 +146,7 @@
             const container = document.getElementById('grid-view');
             container.innerHTML = '';
 
-            let toRender = allCards;
-
-            if (currentTab === 1) {
-                toRender = allCards.filter(c => ownedCards[c.id]);
-            }
+            let toRender = currentTab === 1 ? allCards.filter(c => ownedCards[c.id]) : allCards;
 
             const searchTerm = document.getElementById('search-input').value.toLowerCase();
             if (searchTerm) {
@@ -116,21 +159,24 @@
             toRender.forEach(card => {
                 const isOwned = !!ownedCards[card.id];
                 const div = document.createElement('div');
-                div.className = `group bg-zinc-900 border ${isOwned ? 'border-pink-600' : 'border-zinc-700'} rounded-3xl overflow-hidden hover:border-pink-500 transition-all`;
+                div.className = `group bg-zinc-900 border ${isOwned ? 'border-pink-600' : 'border-zinc-700'} rounded-3xl overflow-hidden hover:border-pink-500 transition-all cursor-pointer`;
                 div.innerHTML = `
                     <div class="aspect-[4/3] bg-zinc-950 p-4 flex items-center justify-center relative">
                         <img src="${card.image}" onerror="this.src='https://picsum.photos/id/237/400/300'" 
                              class="card-img w-full h-full object-contain" alt="${card.name}">
-                        <button onclick="event.stopImmediatePropagation(); toggleOwned(${card.id});" 
-                                class="absolute top-4 right-4 px-5 py-2 ${isOwned ? 'bg-pink-600' : 'bg-black/80 hover:bg-pink-600'} rounded-2xl text-sm font-medium transition-colors">
-                            ${isOwned ? '✓ Owned' : 'Got it'}
-                        </button>
                     </div>
                     <div class="p-5">
                         <div class="font-semibold line-clamp-2">${card.name}</div>
-                        <div class="text-xs text-zinc-400 mt-2">${card.number} • ${card.setAbbr}</div>
+                        <div class="flex justify-between items-center mt-4">
+                            <div class="text-xs text-zinc-400">${card.number} • ${card.setAbbr}</div>
+                            <button onclick="event.stopImmediatePropagation(); toggleOwned(${card.id});" 
+                                    class="text-sm font-medium px-4 py-2 ${isOwned ? 'bg-pink-600' : 'bg-zinc-800 hover:bg-zinc-700'} rounded-2xl">
+                                ${isOwned ? '✓ Owned' : 'Got it'}
+                            </button>
+                        </div>
                     </div>
                 `;
+                div.onclick = () => showModal(card);
                 container.appendChild(div);
             });
         }
