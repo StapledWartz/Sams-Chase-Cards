@@ -34,11 +34,24 @@
         </header>
 
         <div class="p-6">
-            <input id="search-input" 
-                   onkeyup="filterCards()" 
-                   type="text" 
-                   placeholder="Search by name or number..." 
-                   class="w-full bg-zinc-900 border border-zinc-700 focus:border-pink-500 rounded-3xl px-6 py-5 text-base outline-none mb-8">
+            <!-- Filters -->
+            <div class="flex flex-col md:flex-row gap-4 mb-8">
+                <input id="search-input" 
+                       onkeyup="filterCards()" 
+                       type="text" 
+                       placeholder="Search by name or number..." 
+                       class="flex-1 bg-zinc-900 border border-zinc-700 focus:border-pink-500 rounded-3xl px-6 py-5 text-base outline-none">
+
+                <select id="set-filter" onchange="filterCards()" 
+                        class="bg-zinc-900 border border-zinc-700 rounded-3xl px-6 py-5 outline-none text-sm">
+                    <option value="">All Sets</option>
+                </select>
+
+                <select id="year-filter" onchange="filterCards()" 
+                        class="bg-zinc-900 border border-zinc-700 rounded-3xl px-6 py-5 outline-none text-sm">
+                    <option value="">All Years</option>
+                </select>
+            </div>
 
             <div id="grid-view" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-6">
                 <!-- Cards populated here -->
@@ -71,11 +84,33 @@
                 document.getElementById('total-count').innerHTML = 
                     `<span class="font-mono text-pink-400">${allCards.length}</span> cards`;
 
+                populateFilters();
                 renderCards(allCards);
             } catch(e) {
                 console.error(e);
-                document.getElementById('grid-view').innerHTML = `<div class="col-span-full text-center py-20 text-red-400">Could not load cards. Check CSV link.</div>`;
+                document.getElementById('grid-view').innerHTML = `<div class="col-span-full text-center py-20 text-red-400">Could not load cards.</div>`;
             }
+        }
+
+        function populateFilters() {
+            const sets = [...new Set(allCards.map(c => c.setName).filter(Boolean))].sort();
+            const years = [...new Set(allCards.map(c => c.year).filter(Boolean))].sort((a,b) => b-a);
+
+            const setSelect = document.getElementById('set-filter');
+            sets.forEach(set => {
+                const opt = document.createElement('option');
+                opt.value = set;
+                opt.textContent = set;
+                setSelect.appendChild(opt);
+            });
+
+            const yearSelect = document.getElementById('year-filter');
+            years.forEach(year => {
+                const opt = document.createElement('option');
+                opt.value = year;
+                opt.textContent = year;
+                yearSelect.appendChild(opt);
+            });
         }
 
         function renderCards(cards) {
@@ -105,11 +140,18 @@
         }
 
         function filterCards() {
-            const term = document.getElementById('search-input').value.toLowerCase();
-            const filtered = allCards.filter(c => 
-                c.name.toLowerCase().includes(term) || 
-                (c.number && c.number.toLowerCase().includes(term))
-            );
+            const searchTerm = document.getElementById('search-input').value.toLowerCase();
+            const selectedSet = document.getElementById('set-filter').value;
+            const selectedYear = document.getElementById('year-filter').value;
+
+            const filtered = allCards.filter(card => {
+                const matchesSearch = card.name.toLowerCase().includes(searchTerm) || 
+                                     (card.number && card.number.toLowerCase().includes(searchTerm));
+                const matchesSet = !selectedSet || card.setName === selectedSet;
+                const matchesYear = !selectedYear || card.year === selectedYear;
+                return matchesSearch && matchesSet && matchesYear;
+            });
+
             renderCards(filtered);
         }
 
