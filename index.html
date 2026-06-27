@@ -38,8 +38,16 @@
         </div>
 
         <div class="p-6">
-            <input id="search-input" onkeyup="filterCards()" placeholder="Search..." 
-                   class="w-full bg-zinc-900 border border-zinc-700 focus:border-pink-500 rounded-3xl px-6 py-5 outline-none mb-8">
+            <div class="flex flex-wrap gap-4 mb-8">
+                <input id="search-input" onkeyup="filterCards()" placeholder="Search..." 
+                       class="flex-1 bg-zinc-900 border border-zinc-700 focus:border-pink-500 rounded-3xl px-6 py-5 outline-none">
+
+                <select id="sort-select" onchange="filterCards()" class="bg-zinc-900 border border-zinc-700 rounded-3xl px-6 py-5 outline-none">
+                    <option value="name-asc">Sort A-Z</option>
+                    <option value="name-desc">Sort Z-A</option>
+                    <option value="number">Sort by Number</option>
+                </select>
+            </div>
 
             <div id="grid-view" class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 gap-6"></div>
         </div>
@@ -54,10 +62,8 @@
             <div id="modal-image" class="px-8 pb-8"></div>
             <div class="p-6 border-t border-zinc-800">
                 <div id="modal-name" class="text-2xl font-semibold mb-2"></div>
-                <div id="modal-info" class="text-zinc-400"></div>
-                <button id="modal-toggle-btn" 
-                        onclick="toggleFromModal()"
-                        class="mt-6 w-full py-4 rounded-2xl text-lg font-medium"></button>
+                <div id="modal-info" class="text-zinc-400 mb-6"></div>
+                <button id="modal-toggle-btn" onclick="toggleFromModal()" class="w-full py-4 rounded-2xl text-lg font-medium"></button>
             </div>
         </div>
     </div>
@@ -105,27 +111,21 @@
             currentCardId = card.id;
             const isOwned = !!ownedCards[card.id];
 
-            document.getElementById('modal-image').innerHTML = `
-                <img src="${card.image}" class="w-full rounded-2xl" alt="${card.name}">
-            `;
+            document.getElementById('modal-image').innerHTML = `<img src="${card.image}" class="w-full rounded-2xl" alt="${card.name}">`;
             document.getElementById('modal-name').textContent = card.name;
-            document.getElementById('modal-info').innerHTML = `
-                #${card.number} • ${card.setName} (${card.year})
-            `;
+            document.getElementById('modal-info').innerHTML = `#${card.number} • ${card.setName} (${card.year})`;
 
             const btn = document.getElementById('modal-toggle-btn');
-            btn.textContent = isOwned ? "✓ Mark as Wanted" : "Got It!";
-            btn.className = `mt-6 w-full py-4 rounded-2xl text-lg font-medium ${isOwned ? 'bg-red-600 hover:bg-red-700' : 'bg-pink-600 hover:bg-pink-500'}`;
+            btn.textContent = isOwned ? "Mark as Wanted" : "Got It!";
+            btn.className = `w-full py-4 rounded-2xl text-lg font-medium ${isOwned ? 'bg-red-600 hover:bg-red-700' : 'bg-pink-600 hover:bg-pink-500'}`;
 
             document.getElementById('modal').classList.remove('hidden');
             document.getElementById('modal').classList.add('flex');
         }
 
         function toggleFromModal() {
-            if (currentCardId !== null) {
-                toggleOwned(currentCardId);
-                showModal(allCards.find(c => c.id === currentCardId));
-            }
+            if (currentCardId !== null) toggleOwned(currentCardId);
+            showModal(allCards.find(c => c.id === currentCardId));
         }
 
         function closeModal() {
@@ -155,6 +155,15 @@
                     c.number.toLowerCase().includes(searchTerm)
                 );
             }
+
+            // Sort
+            const sortMode = document.getElementById('sort-select').value;
+            toRender.sort((a, b) => {
+                if (sortMode === 'name-asc') return a.name.localeCompare(b.name);
+                if (sortMode === 'name-desc') return b.name.localeCompare(a.name);
+                if (sortMode === 'number') return a.number.localeCompare(b.number, undefined, {numeric: true});
+                return 0;
+            });
 
             toRender.forEach(card => {
                 const isOwned = !!ownedCards[card.id];
