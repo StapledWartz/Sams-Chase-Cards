@@ -41,7 +41,7 @@
             <div class="flex flex-wrap gap-4 mb-8">
                 <input id="search-input" onkeyup="filterCards()" placeholder="Search..." 
                        class="flex-1 bg-zinc-900 border border-zinc-700 focus:border-pink-500 rounded-3xl px-6 py-5 outline-none">
-
+                
                 <select id="sort-select" onchange="filterCards()" class="bg-zinc-900 border border-zinc-700 rounded-3xl px-6 py-5 outline-none">
                     <option value="name-asc">Sort A-Z</option>
                     <option value="name-desc">Sort Z-A</option>
@@ -85,6 +85,7 @@
                 image: r[0] || '',
                 name: r[1] || '',
                 number: r[2] || '',
+                setIcon: r[3] || '',
                 setName: r[5] || '',
                 setAbbr: r[4] || '',
                 year: r[6] || ''
@@ -111,7 +112,12 @@
             currentCardId = card.id;
             const isOwned = !!ownedCards[card.id];
 
-            document.getElementById('modal-image').innerHTML = `<img src="${card.image}" class="w-full rounded-2xl" alt="${card.name}">`;
+            let imageHTML = `<img src="${card.image}" class="w-full rounded-2xl" alt="${card.name}">`;
+            if (card.setIcon) {
+                imageHTML += `<img src="${card.setIcon}" class="absolute top-8 right-8 w-12 h-12 object-contain drop-shadow-2xl" alt="set">`;
+            }
+
+            document.getElementById('modal-image').innerHTML = imageHTML;
             document.getElementById('modal-name').textContent = card.name;
             document.getElementById('modal-info').innerHTML = `#${card.number} • ${card.setName} (${card.year})`;
 
@@ -124,8 +130,11 @@
         }
 
         function toggleFromModal() {
-            if (currentCardId !== null) toggleOwned(currentCardId);
-            showModal(allCards.find(c => c.id === currentCardId));
+            if (currentCardId !== null) {
+                toggleOwned(currentCardId);
+                const card = allCards.find(c => c.id === currentCardId);
+                if (card) showModal(card);
+            }
         }
 
         function closeModal() {
@@ -151,12 +160,10 @@
             const searchTerm = document.getElementById('search-input').value.toLowerCase();
             if (searchTerm) {
                 toRender = toRender.filter(c => 
-                    c.name.toLowerCase().includes(searchTerm) || 
-                    c.number.toLowerCase().includes(searchTerm)
+                    c.name.toLowerCase().includes(searchTerm) || c.number.toLowerCase().includes(searchTerm)
                 );
             }
 
-            // Sort
             const sortMode = document.getElementById('sort-select').value;
             toRender.sort((a, b) => {
                 if (sortMode === 'name-asc') return a.name.localeCompare(b.name);
@@ -171,8 +178,8 @@
                 div.className = `group bg-zinc-900 border ${isOwned ? 'border-pink-600' : 'border-zinc-700'} rounded-3xl overflow-hidden hover:border-pink-500 transition-all cursor-pointer`;
                 div.innerHTML = `
                     <div class="aspect-[4/3] bg-zinc-950 p-4 flex items-center justify-center relative">
-                        <img src="${card.image}" onerror="this.src='https://picsum.photos/id/237/400/300'" 
-                             class="card-img w-full h-full object-contain" alt="${card.name}">
+                        <img src="${card.image}" onerror="this.src='https://picsum.photos/id/237/400/300'" class="card-img w-full h-full object-contain" alt="${card.name}">
+                        ${card.setIcon ? `<img src="${card.setIcon}" class="absolute top-4 right-4 w-10 h-10 object-contain drop-shadow-lg border border-white/30 rounded-xl" alt="set icon">` : ''}
                     </div>
                     <div class="p-5">
                         <div class="font-semibold line-clamp-2">${card.name}</div>
