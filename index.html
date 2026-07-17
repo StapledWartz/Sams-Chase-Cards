@@ -111,12 +111,10 @@
             currentCardId = card.id;
             const isOwned = !!ownedCards[card.id];
 
-            document.getElementById('modal-image').innerHTML = `
-                <img src="${card.image}" class="w-full rounded-2xl" alt="${card.name}">
-            `;
+            document.getElementById('modal-image').innerHTML = `<img src="${card.image}" class="w-full rounded-2xl" alt="${card.name}">`;
             document.getElementById('modal-name').innerHTML = `
-                ${card.setIcon ? `<img src="${card.setIcon}" class="inline w-8 h-8 mr-3 align-middle" alt="set">` : ''}
                 ${card.name}
+                ${card.setIcon ? `<img src="${card.setIcon}" class="inline w-8 h-8 ml-3 align-middle" alt="set icon">` : ''}
             `;
             document.getElementById('modal-info').innerHTML = `#${card.number} • ${card.setName} (${card.year})`;
 
@@ -179,9 +177,9 @@
                              class="card-img w-full h-full object-contain" alt="${card.name}">
                     </div>
                     <div class="p-5">
-                        <div class="flex items-center gap-3">
-                            ${card.setIcon ? `<img src="${card.setIcon}" class="w-8 h-8 object-contain flex-shrink-0" alt="set icon">` : ''}
-                            <div class="font-semibold line-clamp-2">${card.name}</div>
+                        <div class="flex items-center justify-between">
+                            <div class="font-semibold line-clamp-2 flex-1">${card.name}</div>
+                            ${card.setIcon ? `<img src="${card.setIcon}" class="w-8 h-8 object-contain ml-3 flex-shrink-0" alt="set icon">` : ''}
                         </div>
                         <div class="flex justify-between items-center mt-4">
                             <div class="text-xs text-zinc-400">${card.number} • ${card.setAbbr}</div>
