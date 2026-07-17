@@ -11,6 +11,11 @@
         .tail-container { font-family: 'Inter', system_ui, sans-serif; }
         .logo-font { font-family: 'Space Grotesk', sans-serif; }
         .card-img { transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); }
+        body.light { background-color: #f8fafc; color: #0f172a; }
+        body.light .bg-zinc-900 { background-color: #e2e8f0; }
+        body.light .border-zinc-700 { border-color: #cbd5e1; }
+        body.light .text-zinc-200 { color: #0f172a; }
+        body.light .text-zinc-400 { color: #475569; }
     </style>
 </head>
 <body class="tail-container bg-zinc-950 text-zinc-200 min-h-screen">
@@ -26,7 +31,12 @@
                         <p class="text-xs text-pink-400 -mt-1">TRADING CARD TRACKER</p>
                     </div>
                 </div>
-                <div id="stats" class="text-sm text-pink-400 font-medium"></div>
+                <div class="flex items-center gap-x-4">
+                    <div id="stats" class="text-sm text-pink-400 font-medium"></div>
+                    <button onclick="toggleTheme()" id="theme-toggle" class="w-10 h-10 flex items-center justify-center rounded-2xl bg-zinc-900 hover:bg-zinc-800 transition-colors">
+                        <i class="fa-solid fa-moon text-lg"></i>
+                    </button>
+                </div>
             </div>
         </header>
 
@@ -39,12 +49,11 @@
 
         <div class="p-6">
             <div class="flex flex-wrap gap-4 mb-8">
-                <input id="search-input" onkeyup="filterCards()" placeholder="Search..." 
-                       class="flex-1 bg-zinc-900 border border-zinc-700 focus:border-pink-500 rounded-3xl px-6 py-5 outline-none">
+                <input id="search-input" onkeyup="filterCards()" placeholder="Search..." class="flex-1 bg-zinc-900 border border-zinc-700 focus:border-pink-500 rounded-3xl px-6 py-5 outline-none">
                 <select id="sort-select" onchange="filterCards()" class="bg-zinc-900 border border-zinc-700 rounded-3xl px-6 py-5 outline-none">
-                    <option value="name-asc">Sort A-Z</option>
-                    <option value="name-desc">Sort Z-A</option>
-                    <option value="number">Sort by Number</option>
+                    <option value="name-asc">A-Z</option>
+                    <option value="name-desc">Z-A</option>
+                    <option value="number">By Number</option>
                 </select>
             </div>
 
@@ -73,6 +82,7 @@
         let ownedCards = JSON.parse(localStorage.getItem('ownedCards')) || {};
         let currentCardId = null;
         let currentTab = 0;
+        let isDarkMode = true;
 
         async function loadCards() {
             const res = await fetch(CSV_URL);
@@ -94,6 +104,17 @@
             renderCards();
         }
 
+        function toggleTheme() {
+            isDarkMode = !isDarkMode;
+            if (isDarkMode) {
+                document.documentElement.classList.remove('light');
+                document.getElementById('theme-toggle').innerHTML = `<i class="fa-solid fa-moon text-lg"></i>`;
+            } else {
+                document.documentElement.classList.add('light');
+                document.getElementById('theme-toggle').innerHTML = `<i class="fa-solid fa-sun text-lg"></i>`;
+            }
+        }
+
         function updateStats() {
             const count = Object.keys(ownedCards).length;
             document.getElementById('stats').innerHTML = `Owned: <span class="text-pink-400">${count}</span> / ${allCards.length}`;
@@ -112,10 +133,7 @@
             const isOwned = !!ownedCards[card.id];
 
             document.getElementById('modal-image').innerHTML = `<img src="${card.image}" class="w-full rounded-2xl" alt="${card.name}">`;
-            document.getElementById('modal-name').innerHTML = `
-                ${card.name}
-                ${card.setIcon ? `<img src="${card.setIcon}" class="inline w-8 h-8 ml-3 align-middle" alt="set icon">` : ''}
-            `;
+            document.getElementById('modal-name').innerHTML = `${card.name} ${card.setIcon ? `<img src="${card.setIcon}" class="inline w-8 h-8 ml-3 align-middle" alt="set">` : ''}`;
             document.getElementById('modal-info').innerHTML = `#${card.number} • ${card.setName} (${card.year})`;
 
             const btn = document.getElementById('modal-toggle-btn');
@@ -154,9 +172,7 @@
 
             const searchTerm = document.getElementById('search-input').value.toLowerCase();
             if (searchTerm) {
-                toRender = toRender.filter(c => 
-                    c.name.toLowerCase().includes(searchTerm) || c.number.toLowerCase().includes(searchTerm)
-                );
+                toRender = toRender.filter(c => c.name.toLowerCase().includes(searchTerm) || c.number.toLowerCase().includes(searchTerm));
             }
 
             const sortMode = document.getElementById('sort-select').value;
@@ -173,18 +189,16 @@
                 div.className = `group bg-zinc-900 border ${isOwned ? 'border-pink-600' : 'border-zinc-700'} rounded-3xl overflow-hidden hover:border-pink-500 transition-all cursor-pointer`;
                 div.innerHTML = `
                     <div class="aspect-[4/3] bg-zinc-950 p-4 flex items-center justify-center relative">
-                        <img src="${card.image}" onerror="this.src='https://picsum.photos/id/237/400/300'" 
-                             class="card-img w-full h-full object-contain" alt="${card.name}">
+                        <img src="${card.image}" onerror="this.src='https://picsum.photos/id/237/400/300'" class="card-img w-full h-full object-contain" alt="${card.name}">
                     </div>
                     <div class="p-5">
                         <div class="flex items-center justify-between">
                             <div class="font-semibold line-clamp-2 flex-1">${card.name}</div>
-                            ${card.setIcon ? `<img src="${card.setIcon}" class="w-8 h-8 object-contain ml-3 flex-shrink-0" alt="set icon">` : ''}
+                            ${card.setIcon ? `<img src="${card.setIcon}" class="w-8 h-8 object-contain ml-3 flex-shrink-0" alt="set">` : ''}
                         </div>
                         <div class="flex justify-between items-center mt-4">
                             <div class="text-xs text-zinc-400">${card.number} • ${card.setAbbr}</div>
-                            <button onclick="event.stopImmediatePropagation(); toggleOwned(${card.id});" 
-                                    class="text-sm font-medium px-4 py-2 ${isOwned ? 'bg-pink-600' : 'bg-zinc-800 hover:bg-zinc-700'} rounded-2xl">
+                            <button onclick="event.stopImmediatePropagation(); toggleOwned(${card.id});" class="text-sm font-medium px-4 py-2 ${isOwned ? 'bg-pink-600' : 'bg-zinc-800 hover:bg-zinc-700'} rounded-2xl">
                                 ${isOwned ? '✓ Owned' : 'Got it'}
                             </button>
                         </div>
