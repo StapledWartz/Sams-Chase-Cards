@@ -12,15 +12,19 @@
         .logo-font { font-family: 'Space Grotesk', sans-serif; }
         .card-img { transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); }
         
+        /* Light Mode */
         body.light {
-            background-color: #f8fafc;
-            color: #0f172a;
+            --bg: #f8fafc;
+            --card: #ffffff;
+            --border: #e2e8f0;
+            --text: #0f172a;
+            --text-muted: #64748b;
         }
-        body.light .bg-zinc-900 { background-color: #e2e8f0; }
-        body.light .border-zinc-700 { border-color: #cbd5e1; }
-        body.light .text-zinc-200 { color: #0f172a; }
-        body.light .text-zinc-400 { color: #475569; }
-        body.light .bg-zinc-950 { background-color: #f1f5f9; }
+        body.light { background-color: var(--bg); color: var(--text); }
+        body.light .bg-zinc-900 { background-color: var(--card); }
+        body.light .border-zinc-700 { border-color: var(--border); }
+        body.light .text-zinc-200 { color: var(--text); }
+        body.light .text-zinc-400 { color: var(--text-muted); }
     </style>
 </head>
 <body class="tail-container bg-zinc-950 text-zinc-200 min-h-screen">
@@ -46,6 +50,7 @@
             </div>
         </header>
 
+        <!-- Tabs -->
         <div class="px-6 pt-4 border-b border-zinc-800">
             <div class="flex">
                 <button onclick="switchTab(0)" id="tab-all" class="tab-button px-8 py-4 font-medium border-b-2 border-pink-500 text-pink-400">All Cards</button>
@@ -55,8 +60,7 @@
 
         <div class="p-6">
             <div class="flex flex-wrap gap-4 mb-8">
-                <input id="search-input" onkeyup="filterCards()" placeholder="Search..." 
-                       class="flex-1 bg-zinc-900 border border-zinc-700 focus:border-pink-500 rounded-3xl px-6 py-5 outline-none">
+                <input id="search-input" onkeyup="filterCards()" placeholder="Search..." class="flex-1 bg-zinc-900 border border-zinc-700 focus:border-pink-500 rounded-3xl px-6 py-5 outline-none">
                 <select id="sort-select" onchange="filterCards()" class="bg-zinc-900 border border-zinc-700 rounded-3xl px-6 py-5 outline-none">
                     <option value="name-asc">A-Z</option>
                     <option value="name-desc">Z-A</option>
@@ -68,7 +72,7 @@
         </div>
     </div>
 
-    <!-- Modal -->
+    <!-- Modal and Script -->
     <div id="modal" class="hidden fixed inset-0 bg-black/90 z-[100] flex items-center justify-center p-6">
         <div class="bg-zinc-900 rounded-3xl max-w-lg w-full overflow-hidden">
             <div class="p-4 flex justify-end">
@@ -113,12 +117,11 @@
 
         function toggleTheme() {
             isDarkMode = !isDarkMode;
-            const body = document.body;
             if (isDarkMode) {
-                body.classList.remove('light');
+                document.body.classList.remove('light');
                 document.getElementById('theme-toggle').innerHTML = `<i class="fa-solid fa-moon text-lg"></i>`;
             } else {
-                body.classList.add('light');
+                document.body.classList.add('light');
                 document.getElementById('theme-toggle').innerHTML = `<i class="fa-solid fa-sun text-lg"></i>`;
             }
         }
